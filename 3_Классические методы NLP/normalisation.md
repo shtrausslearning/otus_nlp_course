@@ -48,3 +48,67 @@ stemmed_text = ' '.join([morph.parse(x)[0].normal_form for x in text.split(' ')]
 # в этот вечер мы [слушать] [слушать] [слушать] вебинар по обработка естественный язык в отус
 
 ```
+
+### Lemmatise JSON text data
+
+Load JSON data
+
+```python
+
+with open('/kaggle/input/khazah-news/train.json', encoding = 'utf-8') as json_file:
+    data = json.load(json_file)
+
+```
+
+Preprocess text data
+
+```python
+
+# функция которая находит только слова
+def words_only(text):
+    try:
+        return " ".join(re.findall(r'[А-Яа-яA-zёЁ-]+',text)).lower()
+    except:
+        return ""
+
+# расширим список стоп-слов, словами, которые являеются стоп-словами в данной задаче
+add_stop_words = ['kz', 'казахстан', 'астана', 'казахский', 'алматы', 'ао', 'оао', 'ооо']
+months = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',]
+all_stop_words = stop_words + add_stop_words + months
+
+def process_data(data):
+    
+    texts = []
+    targets = []
+    
+    # поочередно проходим по всем новостям в списке
+    for item in tqdm(data):
+               
+        text_lower = words_only(item['text'])            # оставим только слова (str)
+        tokens     = word_tokenizer.tokenize(text_lower) # разбиваем текст на слова (lst of str)
+        
+        # удаляем пунктуацию и стоп-слова
+        tokens = [word for word in tokens if (word not in all_stop_words and not word.isnumeric())]
+        
+        texts.append(tokens) # добавляем в предобработанный список
+    
+    return texts
+
+
+y = [item['sentiment'] for item in data]
+texts = process_data(data)
+
+```
+
+Lemmatise all text
+
+```python
+
+from tqdm import tqdm_notebook
+
+# применяем лемматизацию ко всем текстам
+for i in tqdm_notebook(range(len(texts))):          
+    text_lemmatized = [morph.parse(x)[0].normal_form for x in texts[i]] # применяем лемматизацию для каждого слова в тексте
+    texts[i] = ' '.join(text_lemmatized)                # объединяем все слова в одну строку через пробел
+    
+```
